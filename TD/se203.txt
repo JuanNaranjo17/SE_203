@@ -1,0 +1,60 @@
+set architecture armv7e-m       # Define the arm7e-m CPU arquitecture in the debugger
+target ext :2331                # Specifies the debug target, ext specifies that is being used an extern connection and 2331 is the port where the devise is located
+mon endian little               # Specifies the Bytes order as little endian, the less significative bits are stored first in memory
+mon halt                        # Stop the microcontroller for be able to interact with it
+
+# interface with asm, regs and cmd windows
+define split                    # Definition of a function named split
+  layout split                  # Window set up for be able to split the window and see several areas with relevant information at the same time
+  layout asm                    # Shows a sub window with the assembly code
+  layout regs                   # Shows a sub window with the register content
+  focus cmd                     # As there are several windows at the same time, it's necessary direct commands to a specific window
+end
+
+# interface with C source, regs and cmd windows
+define ss                       # It's similar to the split function but instead show assembly code, it shows source code, for our purposes C code
+  layout split
+  layout src                    # Shows the source code, it means C code
+  layout regs
+  focus cmd
+end
+
+define flash                    # Define a flash function
+  dont-repeat                   # There is not possible to call several times the function, just one by execution
+  mon reset                     # Restarts the microcontroller
+  load                          # Load the code to execute in the microcontroller
+end
+
+# Useful function when the processor is in hardfault to see
+# where it comes from.
+define armex                                        # Function for handle hardfault errors
+  printf "EXEC_RETURN (LR):\n",                     # Start of a message
+  info registers $lr                                # Shows the value of the lr register (link register for handle subroutines, is the address memory with the address to return after finish a subroutine)
+    if ($lr & 0x4)                                  # Bitwise operation, takes the 2 bit of lr register for know if the main stack pointer (MSP) or the process stack pointer (PSP) is used 
+      printf "Uses MSP 0x%x return.\n", $MSP
+      set $armex_base = $MSP                        # Use MSP, mainly uses for handle exceptions or interrumptions, generally in critic cases for ensure there is a stack area
+                                                    # that is not afected by the user code. Protects the critic state of the system
+    else
+      printf "Uses PSP 0x%x return.\n", $PSP
+      set $armex_base = $PSP                        # Use PSP, mainly uses for the aplication itself, the code can modify the stack allows a set up and dynamic changes, useful for multitask
+    end
+
+    # Print of the system state, the register are available since an address computed using MSP or PSP
+    printf "xPSR            0x%x\n", *($armex_base+28)
+    printf "ReturnAddress   0x%x\n", *($armex_base+24)
+    printf "LR (R14)        0x%x\n", *($armex_base+20)
+    printf "R12             0x%x\n", *($armex_base+16)
+    printf "R3              0x%x\n", *($armex_base+12)
+    printf "R2              0x%x\n", *($armex_base+8)
+    printf "R1              0x%x\n", *($armex_base+4)
+    printf "R0              0x%x\n", *($armex_base)
+    printf "Return instruction:\n"
+    x/i *($armex_base+24)                           # Disassembly to the return instruction stocred in the stack while the exception occurs
+    printf "LR instruction:\n"
+    x/i *($armex_base+20)                           # Disassembly the instruction stored in the LR register for see which instruction was being executed just before the hardfault
+end
+
+document armex                                              # Shows the documentation for the armex function
+ARMv7 Exception entry behavior.                             # Bref description about the function
+xPSR, ReturnAddress, LR (R14), R12, R3, R2, R1, and R0      # Shows the registers who are showing
+end                                                         # End of armex documentation
