@@ -1,1 +1,386 @@
 # Course exercises of compilation chain
+## Exercise 1, page 49
+### Translate the following C code into ARM Assembly:
+```c
+uint32_t a; // global variable
+...
+for (uint8_t i=0; i<=a; i++)
+g();
+```
+ARM Assembly solution code:
+
+```s
+.syntax unified
+.arch armv7-m
+.cpu cortex-m4
+
+.thumb
+
+.global _start
+
+_start:
+    // Instance of the parameters for the loop execution
+
+    mov r0, #0          // We use r0 as the counter
+    ldr r1, =a          // r1 = &a
+    ldr r1, [r1]        // r1 = RAM[&a] then r1 = a : We use r1 as the limit for the for
+
+loop:
+    // Loop condition
+    cmp r0, r1          // r0 - r1
+    bgt end             // bit greater than: r0 > r1, if r0 is greater than r1, it means that we did all the loop executions, then the loop is finished
+    // Loop body
+    bl g                // Go to execute the subroutine g
+    add r0, r0, #1      // r0 = r0 + 1, increase the counter, like a loop for a sentence in C
+    b loop              // Repeat the loop until the condition bgt end be executed
+  
+g:
+    // ... code         // subrutine g
+    bx lr               // back to the main loop
+
+end:
+    b end               // b = branch, is a jump to the target end
+
+.section .data:         // Section data in the hardware memory
+
+a:                      // Define the value of a variable a in the data zone of memory, the address is defined by the compiler by itself
+    .word 0x0000000a
+```
+### And if i is an unsigned char?
+
+The only difference related to the first C code is how the comparison is performed. In the new approach, the comparison utilizes all 32 bits, allowing **i** to take all possible values up to **a**, which ensures that the code functions correctly. However, a problem arises when **a** reaches its maximum value. In this case, **i** will never be greater than **a**, preventing the loop from terminating.
+
+This issue is more evident in the first code. For instance, if **a** has a value greater than 254, such as 255, when **i** reaches 255, the next loop iteration will cause an overflow in **i** because it can only store 8 bits. As a result, **i** will reset to 0, leading to an infinite loop.
+
+In the first code, it is crucial for **a** to have a value within the range of 8 bits and not be set to its maximum (all bits set to 1), this imposes many constraints. In contrast, in the second code, **a** can take any value within its range, except when all bits are set to **1**.
+
+### What is the result for ARM given by GGC for the next code:
+```c
+uint32_t a; // global variable
+__attribute__((naked)) void f() {
+    for (uint8_t i=0; i<=a; i++)
+    g();
+}
+```
+GCC generates the instruction **and r3, r3, #255**, which performs a bitwise **AND** operation. This operation modifies the register **r3**, which holds the loop counter, to retain only the least significant **8** bits because the counter **i** in C has only 8 bits. As ARM registers are 32 bits, this ensures that the value of **i** remains within the range of 0 to 255. A bitwise AND operation compares each corresponding bit of two operands, resulting in a bit being set to 1 only if both bits are 1.
+
+## Exercise 2, page 50
+### Translate to Assembly the following C code:
+```c
+// Global variables
+uint32_t *a;
+uint32_t *b;
+uint32_t *c;
+…
+*a += *c;
+*b += *c;
+```
+Assembly code:
+```s
+.syntax unified
+.arch armv7-m
+.cpu cortex-m4
+
+.thumb
+
+.global _start
+
+_start:
+    // Instance of memory directions of pointers and the values pointed
+    // r0 is the pointer ap, r2 is the pointer bp and r4 is the pointer cp
+    // r1, r3 and r5 are the values pointed
+  
+    ldr r0, =ap           // r0 = &ap then r0 = a
+    ldr r1, [r0]          // r1 = RAM[&ap] then r1 = ap
+    ldr r2, =bp           // r2 = &bp then r2 = b
+    ldr r3, [r2]          // r3 = RAM[&bp] then r3 = bp
+    ldr r4, =cp           // r4 = &cp then r4 = c
+    ldr r5, [r4]          // r5 = RAM[&cp] then r5 = cp
+
+    // Sum of values pointed
+
+    add r1, r1, r5        // r1 = r1 + r5 = ap + cp
+    add r3, r3, r5        // r3 = r3 + r5 = bp + cp
+
+    // Save the values of r1, r3 and r5 in the addresses pointed
+
+    str r1, [r0]          // r1 = *a, r0 = a
+    str r3, [r2]          // r3 = *b, r2 = b
+    // str r5, [r4]       // r4 = *c, r5 = c, This is not neccesary because the pointer c is not modified
+
+end:
+    b end
+
+.section .data            // Section data in the hardware memory
+
+ap:                       // Define the value of a variable ap in the data zone of memory, the address is defined by the compiler by itself
+    .global ap            // Define the variables as global for allow them be recognize out of the file
+    .word 0x0000000a
+bp:
+    .global bp
+    .word 0x0000000b
+cp:
+    .global cp
+    .word 0x0000000c
+
+```
+
+### Compare with what GCC produces, as follows:
+
+```c
+// Global variables
+uint32_t *a;
+uint32_t *b;
+uint32_t *c;
+__attribute__((naked)) void f() {
+*a += *c;
+*b += *c;
+}
+```
+The code generated by GCC closely resembles my original code, particularly in terms of logic. While there are some differences in how the registers are loaded, the overall structure remains consistent with my code.
+### Why does GCC load the contents of *c twice instead of once?
+The GCC compiler load the value of c twice because the optimization cannot guarantee the c value doesn't changes between the two loads, then for be sure, it loads the value twice to make sure it has the right value.
+The two instructions where the c value is loaded are (such that c value is stored in [r1] and r1 is *c):
+```s
+ldr	ip, [r1]
+ldr	r1, [r1]
+```
+
+## Exercise 1, page 119
+### On a current Linux x86_64 PC, in increasing order of addresses, what is the order of the following sections when executing: text, data*, rodata*, bss, stack, and heap?
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+const int32_t rodata_instance_cons = 2;
+int32_t bss_declaration_var;
+int32_t data_instance_var = 4;
+// Is not possible do a constant declaration because is not possible change the value after in the program, the constants only alllow instance
+
+int main() {
+    int32_t stack_declaration_var;
+    int32_t stack_instance_var1 = 8;
+    int32_t stack_instance_var2 = 16;
+    int32_t *heap_declaration_var = malloc(sizeof(int32_t));
+
+    printf("Main address: %p\n", main);
+    printf("ROM data address: %p\n", &rodata_instance_cons);
+    printf("Instance static variable in data address: %p\n", &data_instance_var);
+    printf("Declaration static variable in bss address: %p\n", &bss_declaration_var);
+    printf("Declaration dynamic variable in the stack address: %p\n", &stack_declaration_var);
+    printf("Instance dynamic variable 1 in the stack address: %p\n", &stack_instance_var1);
+    printf("Instance dynamic variable 2 in the stack address: %p\n", &stack_instance_var2);
+    printf("Declaration pointer in the stack address: %p\n", &heap_declaration_var);
+    printf("Pointed address in the heap: %p\n", heap_declaration_var);
+
+    return 0;
+}
+```
+Result:
+```
+Main address: 0x56026ed90189
+ROM data address: 0x56026ed91008
+Instance static variable in data address: 0x56026ed93010
+Declaration static variable in bss address: 0x56026ed93018
+Declaration dynamic variable in the stack address: 0x7fffb0074084
+Instance dynamic variable 1 in the stack address: 0x7fffb0074088
+Instance dynamic variable 2 in the stack address: 0x7fffb007408c
+Declaration pointer in the stack address: 0x7fffb0074090
+Pointed address in the heap: 0x56026f27e2a0
+```
+Then the increasing order of the sections in memory is: **.text** , **.rodata** , **.data** , **.bss** , **.heap** , **stack**.
+
+### In which direction does the stack grow?
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+void function2(){
+    int32_t stack_var4, stack_var5;
+    printf("Init address stack var4: %p\n", &stack_var4);
+    printf("Init address stack var5: %p\n", &stack_var5);
+
+}
+
+void function1(){
+    int32_t stack_var3;
+    printf("Init address stack var3: %p\n", &stack_var3);
+
+    function2();
+
+}
+
+int main() {
+
+    int32_t stack_var1;
+    printf("Init address stack var1: %p\n", &stack_var1);
+    int32_t stack_var2;
+    printf("Second address stack var1: %p\n", &stack_var1);
+    printf("Init address stack var2: %p\n", &stack_var2);
+
+    function1();
+
+    printf("Final address stack var1: %p\n", &stack_var1);
+    printf("Final address stack var2: %p\n", &stack_var2);
+
+    return 0;
+}
+```
+Result:
+```
+Init address stack var1: 0x7ffd51a58860
+Second address stack var1: 0x7ffd51a58860
+Init address stack var2: 0x7ffd51a58864
+Init address stack var3: 0x7ffd51a58844
+Init address stack var4: 0x7ffd51a58820
+Init address stack var5: 0x7ffd51a58824
+Final address stack var1: 0x7ffd51a58860
+Final address stack var2: 0x7ffd51a58864
+```
+It’s important to note that variables within a function are stored in increasing order of their addresses based on their declaration sequence. For example, var1, declared first, has a lower address than var2. When one function calls another, the stack grows downwards, resulting in decreasing addresses. This can be illustrated by noting that var3, declared in a function called by the main function, has a lower address than var1 and var2, which are declared in the main function, similarly, var4 and var5 have lower address values than var3, as they are declared in a function that is called by the function where var3 is defined. This demonstrates how the stack continues to grow downwards with each new function call.
+
+## Exercise 2, page 120
+### Compile the provided code (http://bit.ly/2ApXoDl) for ARM without linking using a recent toolchain, with the following optimizations: Os, O0, O1 and O2. For each optimization level, explain the size of the resulting data sections.
+Solution (The table is in hexadecimal):
+
+| Optimization  | text | rodata | data |  bss  | heap | stack | total |
+| ------------- | ---- | ------ | ---- | ----- | ---- | ----- | ----- |
+|    **O0**     |  b8  |   40   |   4  |   5   |   0  |   0   |  101  |
+|    **O1**     |  6c  |   3e   |   4  |   5   |   0  |   0   |   b3  |
+|    **O2**     |  6c  |   3e   |   4  |   5   |   0  |   0   |   b3  |
+|    **Os**     |  68  |   3b   |   4  |   5   |   0  |   0   |   ac  |
+
+For do this table, we take **size(text) = size(text) + size(text.startup)** and **size(rodata) = size(rodata) + size(rodata.str1.#)** because the command abjdump divided in some optimizations the text section and rodata section in several sections:
+```
+Sections:
+Idx Name            Size      VMA       LMA       File off  Algn
+  0 .text           00000000  00000000  00000000  00000034  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data           00000004  00000000  00000000  00000034  2**2
+                    CONTENTS, ALLOC, LOAD, DATA
+  2 .bss            00000005  00000000  00000000  00000038  2**2
+                    ALLOC
+  3 .rodata.str1.1  0000002d  00000000  00000000  00000038  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .text.startup   00000068  00000000  00000000  00000068  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .rodata         0000000e  00000000  00000000  000000d0  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, DATA
+  6 .comment        0000004a  00000000  00000000  000000de  2**0
+                    CONTENTS, READONLY
+  7 .ARM.attributes 0000002a  00000000  00000000  00000128  2**0
+                    CONTENTS, READONLY
+
+```
+The total memory space used decreases as optimization levels become more aggressive. In optimization level O0, the assembly code contains a large number of instructions and data, as the GCC compiler translates the C code directly without any optimizations. For levels O1 and O2, memory usage is lower than in O0 due to optimizations that reduce the number of instructions, resulting in faster execution times, however, there is no difference between the O1 and O2 optimizations for this specific example in terms of memory usage but the execution time could be faster in O2 optimization. The compiler eliminates unnecessary assembly instructions and redundant data, thereby decreasing ROM usage. Finally, the most aggressive optimization for size, as expected, is level Os, which minimizes memory usage for the compiled code. The data and BSS sections remain unchanged across all optimization levels because the number of initialized and no initialized variables is the same for each level.
+
+### Replace const char mesg[] with static const char mesg[]. Explain the differences in data sections related by the previous question (The optimizations are also important).
+Solution (The table is in hexadecimal):
+
+| Optimization  | text | rodata | data |  bss  | heap | stack | total |
+| ------------- | ---- | ------ | ---- | ----- | ---- | ----- | ----- |
+|    **O0**     |  b8  |   40   |   4  |   5   |   0  |   0   |  101  |
+|    **O1**     |  6c  |   30   |   4  |   5   |   0  |   0   |   a5  |
+|    **O2**     |  6c  |   30   |   4  |   5   |   0  |   0   |   a5  |
+|    **Os**     |  68  |   2d   |   4  |   5   |   0  |   0   |   9e  |
+
+For do this table, we take **size(text) = size(text) + size(text.startup)** and **size(rodata) = size(rodata) + size(rodata.str1.#)** because the command abjdump divided in some optimizations the text section and rodata section in several sections:
+```
+Sections:
+Idx Name            Size      VMA       LMA       File off  Algn
+  0 .text           00000000  00000000  00000000  00000034  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data           00000004  00000000  00000000  00000034  2**2
+                    CONTENTS, ALLOC, LOAD, DATA
+  2 .bss            00000005  00000000  00000000  00000038  2**2
+                    ALLOC
+  3 .rodata.str1.1  0000002d  00000000  00000000  00000038  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .text.startup   00000068  00000000  00000000  00000068  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .comment        0000004a  00000000  00000000  000000d0  2**0
+                    CONTENTS, READONLY
+  6 .ARM.attributes 0000002a  00000000  00000000  0000011a  2**0
+                    CONTENTS, READONLY
+```
+A global variable declared as const is stored .rodata or in .text section if the constant is defined inside a function inline. When declared as static, it means the variable is only visible within the file where it is defined. Since the variable is not accessible from other files, the compiler can apply more aggressive optimizations. This is why the size of the .text section is smaller when using static. A not static variable can be used out the file if is declared externally.
+
+### Replace const char mesg[] with const char *mesg, and then with const char * const mesg. Explain the differences in the generated code and data sections compared to question 2.
+Solution with const char *mesg: (The table is in hexadecimal)
+
+| Optimization  | text | rodata | data |  bss  | heap | stack | total |
+| ------------- | ---- | ------ | ---- | ----- | ---- | ----- | ----- |
+|    **O0**     |  c0  |   30   |   8  |   5   |   0  |   0   |   fd  |
+|    **O1**     |  68  |   2e   |   8  |   5   |   0  |   0   |   a3  |
+|    **O2**     |  68  |   2e   |   8  |   5   |   0  |   0   |   a3  |
+|    **Os**     |  64  |   2e   |   8  |   5   |   0  |   0   |   9f  |
+
+For do this table, we take **size(text) = size(text) + size(text.startup)** and **size(rodata) = size(rodata) + size(rodata.str1.#)** because the command abjdump divided in some optimizations the text section and rodata section in several sections:
+```
+Sections:
+Idx Name            Size      VMA       LMA       File off  Algn
+  0 .text           00000000  00000000  00000000  00000034  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data           00000008  00000000  00000000  00000034  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, DATA
+  2 .bss            00000005  00000000  00000000  0000003c  2**2
+                    ALLOC
+  3 .rodata.str1.1  0000002e  00000000  00000000  0000003c  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .text.startup   00000064  00000000  00000000  0000006c  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .comment        0000004a  00000000  00000000  000000d0  2**0
+                    CONTENTS, READONLY
+  6 .ARM.attributes 0000002a  00000000  00000000  0000011a  2**0
+                    CONTENTS, READONLY
+
+```
+Solution with const char * const mesg: (The table is in hexadecimal)
+| Optimization  | text | rodata | data |  bss  | heap | stack | total |
+| ------------- | ---- | ------ | ---- | ----- | ---- | ----- | ----- |
+|    **O0**     |  b8  |   44   |   4  |   5   |   0  |   0   |  105  |
+|    **O1**     |  6c  |   42   |   4  |   5   |   0  |   0   |   b7  |
+|    **O2**     |  6c  |   42   |   4  |   5   |   0  |   0   |   b7  |
+|    **Os**     |  68  |   3f   |   4  |   5   |   0  |   0   |   b0  |
+
+For do this table, we take **size(text) = size(text) + size(text.startup)** and **size(rodata) = size(rodata) + size(rodata.str1.#)** because the command abjdump divided in some optimizations the text section and rodata section in several sections:
+```
+Sections:
+Idx Name            Size      VMA       LMA       File off  Algn
+  0 .text           00000000  00000000  00000000  00000034  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data           00000004  00000000  00000000  00000034  2**2
+                    CONTENTS, ALLOC, LOAD, DATA
+  2 .bss            00000005  00000000  00000000  00000038  2**2
+                    ALLOC
+  3 .rodata.str1.1  0000003b  00000000  00000000  00000038  2**0
+                    CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .text.startup   00000068  00000000  00000000  00000074  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .rodata         00000004  00000000  00000000  000000dc  2**2
+                    CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+  6 .comment        0000004a  00000000  00000000  000000e0  2**0
+                    CONTENTS, READONLY
+  7 .ARM.attributes 0000002a  00000000  00000000  0000012a  2**0
+                    CONTENTS, READONLY
+
+```
+When only the values being pointed to are constant, the size of the data section increases because it must store the values of the pointers, which can be dynamic. However, when both the values being pointed to and the pointers themselves are constant, the size of the data section remains the same as it would without pointers. In this case, the constant pointers are stored in the read-only data (.rodata) section.
+
+### Start with -O0 and examine the contents of .rodata (using objdump -s). Why does it contain the same string twice? Moreover, are they indeed the same string?
+
+```          
+Contents of section .rodata:
+ 0000 48656c6c 6f20576f 726c6421 0a000000  Hello World!....
+ 0010 48656c6c 6f20576f 726c6421 00000000  Hello World!....
+ 0020 78203d20 25642c20 79203d20 25642c20  x = %d, y = %d, 
+ 0030 7a203d20 25642c20 74203d20 25640a00  z = %d, t = %d..
+```
+The compiler produce a String "Hello World!" with a line break in the 0x0000 address, and the same String but without the line break in the 0x0010 address.
+
+### Look at the generated code (still using objdump, and it's up to you to find the right option): which string is used? To which function is it passed? Why is it not the same function specified in the C code? What is the purpose of this? (The manual for this function may help you.) The following steps will help you understand the role of the other string.
+
+### Compile with -O1. Look at the data sections and their contents. What do you notice? A Google search for the name of the newly appeared data section will reveal its purpose. With linking, you will find out which string is actually used. It's up to you to proceed from there.
+
