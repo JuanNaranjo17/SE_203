@@ -435,7 +435,7 @@ Contents of section .rodata:
  2040 726c6421 0a00                        rld!..          
 ```
 The constants appear in a different order compared to the order in the `.rodata` section without optimization, but the size remains constant.
-# Interest sections:
+**Interest sections:**
 
 - **.interp**: Specifies the dynamic interpreter, which is essential for executing the binary in a compatible environment.
   
