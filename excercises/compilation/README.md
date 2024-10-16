@@ -373,12 +373,50 @@ When only the values being pointed to are constant, the size of the data section
 
 ```          
 Contents of section .rodata:
- 0000 48656c6c 6f20576f 726c6421 0a000000  Hello World!....
- 0010 48656c6c 6f20576f 726c6421 00000000  Hello World!....
- 0020 78203d20 25642c20 79203d20 25642c20  x = %d, y = %d, 
- 0030 7a203d20 25642c20 74203d20 25640a00  z = %d, t = %d..
+ 2000 01000200 00000000 48656c6c 6f20576f  ........Hello Wo
+ 2010 726c6421 0a004865 6c6c6f20 576f726c  rld!..Hello Worl
+ 2020 64210000 00000000 78203d20 25642c20  d!......x = %d, 
+ 2030 79203d20 25642c20 7a203d20 25642c20  y = %d, z = %d, 
+ 2040 74203d20 25640a00                    t = %d..        
 ```
-The compiler produce a String "Hello World!" with a line break in the 0x0000 address, and the same String but without the line break in the 0x0010 address.
+The compiler generates the string "Hello World!" with a newline character at address 0x2008, and the same string without the newline character at address 0x2016. This allows the use of the puts() function, which prints a string followed by a newline character to the console. Compared to printf(), puts() is simpler to use since it does not require formatting, resulting in smaller code size and improved performance.
+
+```
+0000000000001169 <main>:
+    1169:	f3 0f 1e fa          	endbr64 
+    116d:	55                   	push   %rbp
+    116e:	48 89 e5             	mov    %rsp,%rbp
+    1171:	48 83 ec 10          	sub    $0x10,%rsp
+    1175:	c7 05 99 2e 00 00 0c 	movl   $0xc,0x2e99(%rip)        # 4018 <y>
+    117c:	00 00 00 
+    117f:	0f b6 05 8f 2e 00 00 	movzbl 0x2e8f(%rip),%eax        # 4015 <z.2346>
+    1186:	83 c0 01             	add    $0x1,%eax
+    1189:	88 05 86 2e 00 00    	mov    %al,0x2e86(%rip)        # 4015 <z.2346>
+    118f:	0f b6 05 7f 2e 00 00 	movzbl 0x2e7f(%rip),%eax        # 4015 <z.2346>
+    1196:	0f b6 c0             	movzbl %al,%eax
+    1199:	8b 15 79 2e 00 00    	mov    0x2e79(%rip),%edx        # 4018 <y>
+    119f:	01 d0                	add    %edx,%eax
+    11a1:	66 89 45 fe          	mov    %ax,-0x2(%rbp)
+    11a5:	48 8d 3d 6a 0e 00 00 	lea    0xe6a(%rip),%rdi        # 2016 <mesg+0xe>
+    11ac:	e8 af fe ff ff       	callq  1060 <puts@plt>
+    11b1:	0f b7 75 fe          	movzwl -0x2(%rbp),%esi
+    11b5:	0f b6 05 59 2e 00 00 	movzbl 0x2e59(%rip),%eax        # 4015 <z.2346>
+    11bc:	0f b6 c8             	movzbl %al,%ecx
+    11bf:	8b 15 53 2e 00 00    	mov    0x2e53(%rip),%edx        # 4018 <y>
+    11c5:	8b 05 45 2e 00 00    	mov    0x2e45(%rip),%eax        # 4010 <x>
+    11cb:	41 89 f0             	mov    %esi,%r8d
+    11ce:	89 c6                	mov    %eax,%esi
+    11d0:	48 8d 3d 51 0e 00 00 	lea    0xe51(%rip),%rdi        # 2028 <mesg+0x20>
+    11d7:	b8 00 00 00 00       	mov    $0x0,%eax
+    11dc:	e8 8f fe ff ff       	callq  1070 <printf@plt>
+    11e1:	b8 00 00 00 00       	mov    $0x0,%eax
+    11e6:	c9                   	leaveq 
+    11e7:	c3                   	retq   
+    11e8:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+    11ef:	00 
+```
+In the direction 0x11a5, the code charge the register %rdi with the address memory value %rip + 0x0e6a, %rip has the address value of the next instruction to execute, in the address memory 0x11a5, %rdi yields 0x11ac, then, the register %rdi has a value of 0x2016, this is the address value where is stored the chaine mesg without the newlinw character because the function puts() introduce a linebreak character at the end of the String by itself. 
+The instruction at address 0x11ac uses the callq assembly instruction to print the string located at the address in %rdi, which is 0x2016, effectively outputting the string mesg without the newline character.
 
 ### Look at the generated code (still using objdump, and it's up to you to find the right option): which string is used? To which function is it passed? Why is it not the same function specified in the C code? What is the purpose of this? (The manual for this function may help you.) The following steps will help you understand the role of the other string.
 
