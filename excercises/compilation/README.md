@@ -415,10 +415,12 @@ The compiler generates the string "Hello World!" with a newline character at add
     11e8:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
     11ef:	00 
 ```
-In the direction 0x11a5, the code charge the register %rdi with the address memory value %rip + 0x0e6a, %rip has the address value of the next instruction to execute, in the address memory 0x11a5, %rdi yields 0x11ac, then, the register %rdi has a value of 0x2016, this is the address value where is stored the chaine mesg without the newlinw character because the function puts() introduce a linebreak character at the end of the String by itself. 
+At address 0x11a5, the code loads the %rdi register with the memory address calculated as %rip + 0x0e6a (The assembly argument 0xe6a(%rip) = %rip + 0xe6a). Since %rip contains the address of the next instruction to be executed (which is 0x11ac), %rdi ends up with a value of 0x2016. This address holds the string mesg without the newline character, as the puts() function automatically adds a line break at the end of the string.
 The instruction at address 0x11ac uses the callq assembly instruction to print the string located at the address in %rdi, which is 0x2016, effectively outputting the string mesg without the newline character.
 
 ### Look at the generated code (still using objdump, and it's up to you to find the right option): which string is used? To which function is it passed? Why is it not the same function specified in the C code? What is the purpose of this? (The manual for this function may help you.) The following steps will help you understand the role of the other string.
+
+The assembly code generates the second string just to use the puts() C function, while keeping the original string with the newline character intact, as the compilation was performed without any optimization. The original string is not used.
 
 ### Compile with -O1. Look at the data sections and their contents. What do you notice? A Google search for the name of the newly appeared data section will reveal its purpose. With linking, you will find out which string is actually used. It's up to you to proceed from there.
 
