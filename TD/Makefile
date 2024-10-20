@@ -8,9 +8,9 @@ GDB    = $(PREFIX)gdb
 CC     = $(PREFIX)gcc
 
 # Options for C, assembly, debug and linker commands
-CFLAGS = -c -g -O1 -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+CFLAGS = -c -g -O1 -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding
 ASFLAGS  = -g
-LDFLAGS  = -T ld_ram.lds -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib
+LDFLAGS  = -T ld_ram.lds -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding
 GDBFLAGS = -x se203.gdb
 
 # EXE = test.elf

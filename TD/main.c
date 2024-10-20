@@ -1,6 +1,13 @@
 #include <stdint.h>         // Library for handle int
 #include <stdbool.h>        // library for use the boolean
 
+/*
+int i;
+int a;
+int c;
+int h;
+*/
+
 int fibo(int n) {
     if (n <= 0) {
         return 0;  // F(0) = 0
@@ -12,14 +19,7 @@ int fibo(int n) {
 }
 
 int main(){
-    int i = 0;
-
-    /*
-    while(true){
-        // infinite loop
-        i = i + 1;
-    }
-
-    return 0;*/
+    //while (true);
+    
     return fibo(8);
 }

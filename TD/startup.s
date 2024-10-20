@@ -1,14 +1,15 @@
 .syntax unified
+.arch armv7-m
+.cpu cortex-m4
 .global _start
+.global _exit
 .thumb
 
-.section .text
+.thumb_func
 
 _start:
-    // Initialiser la pile et les segments de mémoire si nécessaire
-
-    bl main           // Call the main function
-    bx lr             // back since the function main
-
+    ldr sp, = _stack_start  // Inicializa el puntero de pila
+    bl init_bss             // Inicializa el BSS
+    bl main                 // Llama a main
 _exit:
-    b _exit
+    b _exit                 // Bucle infinito
