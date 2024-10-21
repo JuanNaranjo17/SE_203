@@ -8,9 +8,10 @@ GDB    = $(PREFIX)gdb
 CC     = $(PREFIX)gcc
 
 # Options for C, assembly, debug and linker commands
-CFLAGS = -c -g -O1 -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding
+TARGET_ARCH = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding -DSTM32L475xx -I./CMSIS/Device/ST/STM32L4xx/Include -I./CMSIS/Include -Wall -Werror
+CFLAGS = -c -g -O1 $(TARGET_ARCH)
 ASFLAGS  = -g
-LDFLAGS  = -T ld_ram.lds -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding
+LDFLAGS  = -T ld_ram.lds $(TARGET_ARCH)
 GDBFLAGS = -x se203.gdb
 
 # EXE = test.elf
@@ -20,7 +21,7 @@ CFILES   = $(wildcard *.c)								# Get all .c files in the directory into an ar
 ASFILES  = $(wildcard *.s)								# Get all .s files in the directory into an array
 OBJFILES = $(patsubst %.c,%.o,$(CFILES))				# Create corresponding .o files since .c files (search the files that finish in .c and replace .c by .o)
 OBJFILES += $(patsubst %.s,%.o,$(ASFILES))				# Create corresponding .o files since .s files (search the files that finish in .s and replace .s by .o)
-OBJFILES += clocks.o
+#OBJFILES += clocks.o
 #ELFFILES = $(patsubst %.s,%.elf,$(ASFILES))			 # Create corresponding .elf files since .s files, each assembly file will have his corresponding .elf file
 
 

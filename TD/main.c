@@ -30,7 +30,7 @@ int main(){
     //while (true);
     
     //return fibo(8);
-    clocks_init();
+    //clocks_init();
     led_init();
 
     while (1) {

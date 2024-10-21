@@ -2,6 +2,7 @@
 #define LED_H
 
 #include <stdint.h>
+#include <stm32l4xx.h>
 
 // Enum for represent the LEDs state
 typedef enum {
