@@ -20,6 +20,7 @@ CFILES   = $(wildcard *.c)								# Get all .c files in the directory into an ar
 ASFILES  = $(wildcard *.s)								# Get all .s files in the directory into an array
 OBJFILES = $(patsubst %.c,%.o,$(CFILES))				# Create corresponding .o files since .c files (search the files that finish in .c and replace .c by .o)
 OBJFILES += $(patsubst %.s,%.o,$(ASFILES))				# Create corresponding .o files since .s files (search the files that finish in .s and replace .s by .o)
+OBJFILES += clocks.o
 #ELFFILES = $(patsubst %.s,%.elf,$(ASFILES))			 # Create corresponding .elf files since .s files, each assembly file will have his corresponding .elf file
 
 

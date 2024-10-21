@@ -1,6 +1,7 @@
 #include <stdint.h>         // Library for handle int
-#include <stdbool.h>        // library for use the boolean
-#include "led.h"
+#include <stdbool.h>        // Library for use the boolean
+#include "led.h"            // Include the library for handle the LED
+#include "clocks.h"         // Include the library fo handle the clocks
 
 /*
 int i;
@@ -29,6 +30,7 @@ int main(){
     //while (true);
     
     //return fibo(8);
+    clocks_init();
     led_init();
 
     while (1) {
