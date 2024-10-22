@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stm32l4xx.h>
-#include <stdio.h>
 
 extern uint32_t FreqSysClk;                                                                                  // Set the micro clock
 
