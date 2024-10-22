@@ -32,7 +32,7 @@ int main(){
     
     //return fibo(8);
     //clocks_init();
-    led_init();
+    //led_init();
     uart_init();
     //char buffer[12];
 
@@ -47,8 +47,8 @@ int main(){
         delay();
         led(LED_OFF);       // Turn on the LED
         */
-        uart_putchar('H');
-        led_g_on();
+        //uart_putchar('H');
+        //led_g_on();
         /*uint8_t c = uart_getchar();     // Receive a character
         uart_putchar(c);                // Send the character
         uart_puts("cachon");

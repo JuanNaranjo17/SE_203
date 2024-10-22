@@ -86,13 +86,34 @@ void uart_gets(char *s, size_t size){
 
 }
 // checksum
-void checksum(){
+/*void checksum(){
     uint32_t checksum_var = 0;  
     while (1) {
         uint8_t byte = uart_getchar();
         checksum_var += byte;
         //uart_putchar(byte);
     }
+}*/
+void checksum() {
+    uint32_t checksum_var = 0;
+    char buffer[9];                                     // Buffer to store the hexadecimal representation(8 bits + null terminator)
+    const char hex_chars[] = "0123456789ABCDEF";
+
+    // Receive 1000 bytes
+    for (int i = 0; i < 1000; i++) {
+        uint8_t byte = uart_getchar();
+        checksum_var += byte;
+    }
+
+    // Convert checksum_var to hexadecimal
+    for (int i = 7; i >= 0; i--) {
+        buffer[i] = hex_chars[checksum_var & 0xF];      // Take the last 4 bits and convert to hexadecimal
+        checksum_var >>= 4;                             // Shift 4 bits to right
+    }
+    buffer[8] = '\0';                                   // Null terminator for finish the string
+
+    // Show the sum
+    uart_puts(buffer);
 }
 // JLinkExe -device STM32L475VG -if SWD -autoconnect 1 -speed auto ...
 // make connect
