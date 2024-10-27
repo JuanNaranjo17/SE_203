@@ -3,6 +3,7 @@
 #include "led.h"            // Include the library for handle the LED
 #include "clocks.h"         // Include the library for handle the clocks
 #include "uart.h"           // Include the library for handle the USART
+#include "matrix.h"         // Include the library for handle the LED matrix
 
 /*
 int i;
@@ -33,8 +34,9 @@ int main(){
     //return fibo(8);
     //clocks_init();
     //led_init();
-    uart_init();
+    //uart_init();
     //char buffer[12];
+    matrix_init();
 
     while (1) {
         /*
@@ -57,7 +59,8 @@ int main(){
         uart_puts(buffer);
         uart_putchar('\n');             // Add a newline character for improve the format
         uart_puts("cachon");*/
-        checksum();
+        //checksum();
+        test_pixels();
     }
     return 0;
 }
