@@ -170,3 +170,20 @@ void test_pixels(){
         delay_ms(10);
     }
 }
+
+void test_image(){
+    const uint8_t *byte_start = &_binary_image_raw_start;       // Obtain the first byte of the image.o using the symbole given by the makefile
+    rgb_color LED[8];                                           // Instance of a row
+
+    while(1){                                                   // Keep showing the image
+        for (uint8_t row = 0; row < 8; row++) {                 // Go through the rows
+            for (uint8_t i = 0; i < 8; i++) {                   // Set each LED in a row with the correspondent value
+                LED[i].r = *byte_start++;
+                LED[i].g = *byte_start++;
+                LED[i].b = *byte_start++;
+            }
+            mat_set_row(row, LED);                              // Put the row value in the DM163
+        }
+        byte_start -= 192;                                      // Recover the init address
+    }
+}

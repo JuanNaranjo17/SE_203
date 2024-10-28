@@ -6,6 +6,7 @@ AS     = $(PREFIX)as
 LD     = $(PREFIX)ld
 GDB    = $(PREFIX)gdb
 CC     = $(PREFIX)gcc
+OCP    = $(PREFIX)objcopy
 
 # Options for C, assembly, debug and linker commands
 TARGET_ARCH = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostdlib -ffreestanding -DSTM32L475xx -I./CMSIS/Device/ST/STM32L4xx/Include -I./CMSIS/Include -Wall -Werror
@@ -21,9 +22,8 @@ CFILES   = $(wildcard *.c)								# Get all .c files in the directory into an ar
 ASFILES  = $(wildcard *.s)								# Get all .s files in the directory into an array
 OBJFILES = $(patsubst %.c,%.o,$(CFILES))				# Create corresponding .o files since .c files (search the files that finish in .c and replace .c by .o)
 OBJFILES += $(patsubst %.s,%.o,$(ASFILES))				# Create corresponding .o files since .s files (search the files that finish in .s and replace .s by .o)
+OBJFILES += image.o
 #OBJFILES += clocks.o
-#ELFFILES = $(patsubst %.s,%.elf,$(ASFILES))			 # Create corresponding .elf files since .s files, each assembly file will have his corresponding .elf file
-
 
 TARGET   = main											# Name of the final executable
 
@@ -38,10 +38,8 @@ build: $(TARGET)										# Start point for build the project, the main objectiv
 %.o:%.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-# Rule to link .o files into .elf files
-#%.elf:%.o
-#	$(LD) $(LDFLAGS) $< -o $@
-
+%.o : %.raw
+	$(OCP) -I binary -O elf32-littlearm -B arm $^ $@
 
 # Rule to link the .o files into the final executable main
 $(TARGET): $(OBJFILES)									# Define the main file (TARGET) with the de dependeces (OBJFILES)
