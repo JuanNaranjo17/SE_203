@@ -9,6 +9,12 @@ _stack_start = ORIGIN(SRAM2) + LENGTH(SRAM2);               /* Define the stack 
 
 SECTIONS{
 
+    /* Vector table section (should be in FLASH) */
+    .isr_vector :
+    {
+        KEEP(*(.isr_vector))   /* Keep the vector table section */
+    } > FLASH
+
     /* Text section for the executed code saved in SRAM1 */
     .text :
     {
@@ -22,7 +28,7 @@ SECTIONS{
     {
         _rodata_start = .;
         *(.rodata)             /* All the read only data */
-        _data_end = .;
+        _rodata_end = .;
     } > SRAM1
 
     /* Data section for the initialized variables */

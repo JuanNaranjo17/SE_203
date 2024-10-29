@@ -2,7 +2,6 @@
 #define MATRIX_H
 
 #include <stdint.h>
-#include <stddef.h>
 #include <stm32l4xx.h>
 
 // DM163 - microcontroller pin map
