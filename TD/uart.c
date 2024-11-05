@@ -141,15 +141,29 @@ void test_USART(){
     }
 }
 
-void USART1_IRQHandler(void){
-    if (USART1->ISR & USART_ISR_RXNE){                      // Check if exists received data
-        uint8_t byte_received = uart_getchar();             // Read the received data
+void USART1_IRQHandler(void) {
+    if (USART1->ISR & USART_ISR_RXNE) {                         // Check if there is received data
+        uint8_t byte_received = uart_getchar();                 // Read the received data
 
-        if (byte_received == 0xFF){
-            frame_index = 0;
-        }else{
-            frames[frame_index] = byte_received;
-            frame_index++;
+        // Check the transmition errors
+        if (USART1->ISR & (USART_ISR_FE | USART_ISR_ORE)) {     // If there exists an overrun or frame error, ignore the current frame
+            USART1->ICR = USART_ICR_ORECF | USART_ICR_FECF;     // Clean the overrun error and trame error flag in USART1_ISR register
+            USART1->RQR = USART_RQR_RXFRQ;                      // Set the TXE flag in ISR register (Transmiter data register empty) for discard the data
+            return;                                             // Go out of the interruption handler
+        }
+        
+        // Detect the frame start
+        if (byte_received == 0xFF) {
+            frame_index = 0;                                    // Restart the index as the start frame
+            frame_ready = 0;                                    // The frame is not ready to be shown (frame_ready = 0)
+        } else {
+            // Store the frames
+            if (frame_index < 192) {
+                frames[frame_index] = byte_received;
+                frame_index++;
+            } else if(frame_index == 192) {                     // Check if it is the end of the frame
+                frame_ready = 1;                                // The frame is completely received and ready to show (frame_ready = 1)
+            } else return;
         }
     }
 }
