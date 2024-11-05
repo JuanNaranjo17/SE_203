@@ -13,7 +13,7 @@ SECTIONS{
     .isr_vector :
     {
         KEEP(*(.isr_vector))   /* Keep the vector table section */
-    } > FLASH
+    } > SRAM1
 
     /* Text section for the executed code saved in SRAM1 */
     .text :

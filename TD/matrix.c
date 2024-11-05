@@ -1,13 +1,17 @@
 #include "matrix.h"
 
 // Aproximate Solution
-void delay_ms(int ms){
-    for (int i = 0; i < ms*80000000/1000; i++)                                              // Clock frequency * time = number of pass instructions
+void delay_ms(uint32_t time, uint8_t select){
+    if (select == 1){                                                                         // Time is in miliseconds
+        for (uint32_t i = 0; i < time*FreqSysClk/1000; i++)                                   // Clock frequency * time = number of pass instructions
         asm volatile("nop");
+    } else if(select == 0){                                                                   // Time is in nanoseconds
+        for (uint32_t i = 0; i < time*FreqSysClk/1000000000; i++)                             // Clock frequency * time = number of pass instructions
+        asm volatile("nop");
+    }
 }
 
-void matrix_init()
-{
+void matrix_init(){
     RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN | RCC_AHB2ENR_GPIOCEN);      // Enable the port A, B and C clock
 
     // Define PORTx IO as OUTPUT (Assign the relevant pins as digital outputs)
@@ -39,7 +43,7 @@ void matrix_init()
     ROW7(0);
 
     // Wait 100 ms to wait the DM163 being initialized.
-    delay_ms(100);
+    delay_ms(100, 1);
     RST(1);
 
     // Init BANK0 for be able to use the register bank1 and obtain more color representations
@@ -51,23 +55,22 @@ void matrix_init()
 
 void pulse_SCK(){               // delay > 25 ns = 0.000025 ms
     SCK(0);
-    delay_ms(0.000025);
+    delay_ms(25,0);
     SCK(1);
-    delay_ms(0.000025);
+    delay_ms(25,0);
     SCK(0);
 }
 
 void pulse_LAT(){               // delay > 25 ns = 0.000025 ms for high state, delay > 7 ns = 0.00007 ms for low state
     LAT(1);
-    delay_ms(0.000025);
+    delay_ms(25,0);
     LAT(0);
-    delay_ms(0.000025);
+    delay_ms(25,0);
     LAT(1);
 }
 
 
-void deactivate_rows()
-{
+void deactivate_rows(){
     ROW0(0);
     ROW1(0);
     ROW2(0);
@@ -118,15 +121,15 @@ void send_byte(uint8_t val){
     }
 }
 
-void mat_set_row(int row, const rgb_color *val)
-{
+void mat_set_row(int row, const rgb_color *val){
     if (row < 0 || row > 7) return;                 // Invalid row handle
+
+    deactivate_rows();                              // Desactivate all the rows
     for (uint8_t i = 8; i > 0; i--){                // Send the RGB row color since left to rigth
         send_byte(val[i - 1].b);                    // Send the blue component
         send_byte(val[i - 1].g);                    // Send the green component
         send_byte(val[i - 1].r);                    // Send the red component
     }
-    deactivate_rows();                              // Desactivate all the rows
     pulse_LAT();                                    // Upload the DM163 outputs
     activate_row(row);                              // Activate the row selected
 }
@@ -149,7 +152,7 @@ void test_pixels(){
     }
     for (uint8_t i = 0; i < 8; i++){                // Iterate the row
         mat_set_row(i, color);                      // Send the row
-        delay_ms(10);                               // Wait 10ms
+        delay_ms(10,1);                             // Wait 10ms
     }
     for (uint8_t i = 0; i < 8; i++){
         color[i].r = 0;
@@ -158,7 +161,7 @@ void test_pixels(){
     }
     for (uint8_t i = 0; i < 8; i++){
         mat_set_row(i, color);
-        delay_ms(10);
+        delay_ms(10,1);
     }
     for (uint8_t i = 0; i < 8; i++){
         color[i].r = ((256 / (i + 1)) - 1);         // Red's intensity
@@ -167,12 +170,12 @@ void test_pixels(){
     }
     for (uint8_t i = 0; i < 8; i++){
         mat_set_row(i, color);
-        delay_ms(10);
+        delay_ms(10,1);
     }
 }
 
-void test_image(){
-    const uint8_t *byte_start = &_binary_image_raw_start;       // Obtain the first byte of the image.o using the symbole given by the makefile
+void test_image(uint8_t *address_start){
+    const uint8_t *byte_start = address_start;                  // Obtain the first byte of the image.o using the symbole given by the makefile
     rgb_color LED[8];                                           // Instance of a row
 
     while(1){                                                   // Keep showing the image

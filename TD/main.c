@@ -5,12 +5,6 @@
 #include "irq.h"            // Include the library for handle the interruptions
 #include "buttons.h"        // Include the library for handle the buttons interruptions
 
-void delay(){
-    for (int i = 0; i < 10000; i++) {
-            asm volatile("nop"); // Delay
-        }
-}
-
 int fibo(int n) {
     if (n <= 0) {
         return 0;  // F(0) = 0
@@ -23,11 +17,16 @@ int fibo(int n) {
 
 
 int main(){
+    clocks_init();
     led_init();
+    uart_init(38400);
     matrix_init();
     irq_init();
     button_init();
-    test_image();
+    //test_USART();
+
+    test_image((uint8_t *)frames);
+    test_image(&_binary_image_raw_start);
 
     while (1);
     return 0;

@@ -39,9 +39,27 @@ void led(led_state_t state) {
     }
 }
 
-
 void switch_LED_g(){
 
     if (GPIOB->ODR & GPIO_ODR_OD14) led_g_off();                                        // Read the output data register, if 1, turn off the LED, otherwise turn on
     else led_g_on();
+}
+
+void delay(){
+    for (uint32_t i = 0; i < 1000000; i++) {
+            asm volatile("nop"); // Delay
+        }
+}
+
+void test_LED(){
+    while(1){
+        led_g_on();         // Turn on the green LED
+        delay();
+        led_g_off();        // Turn off the green LED
+        led(LED_YELLOW);    // Turn on the yellow LED
+        delay();
+        led(LED_BLUE);      // Turn on the blue LED
+        delay();
+        led(LED_OFF);       // Turn on the LED
+    }
 }

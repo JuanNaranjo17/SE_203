@@ -1,41 +1,50 @@
 #include "uart.h"
 
-uint32_t FreqSysClk = 80000000;
+static volatile uint8_t frame_index = 0;
+volatile uint8_t frame_ready = 0;
+volatile uint8_t frames[192];
 
-void uart_init(){
+void uart_init(int baudrate){
 
     // Disable the USART for handle the setup
     USART1->CR1 &= ~(USART_CR1_UE);
 
-    // Enable the port B and USART clock
-    RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOBEN | RCC_APB2ENR_USART1EN);
+    // Enable the port B clock
+    RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOBEN);
 
     // Put the pin TX and RX in the alternate function mode
-    GPIOB->MODER &= ~(GPIO_MODER_MODE6_Msk | GPIO_MODER_MODE7_Msk);                                                    // Clean PB6 and PB7 bits
     GPIOB->MODER |= (GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1);                                                         // Set PB6 and PB7 in alternate function mode, TX and RX respectively
+    GPIOB->MODER &= ~(GPIO_MODER_MODE6_0 | GPIO_MODER_MODE7_0);
     GPIOB->AFR[0] &= ~(GPIO_AFRL_AFSEL6_Msk | GPIO_AFRL_AFSEL7_Msk);                                                   // Clean the AFRL[0] register
     GPIOB->AFR[0] |= (7 << GPIO_AFRL_AFSEL6_Pos);                                                                      // Set the alternate function to TX
     GPIOB->AFR[0] |= (7 << GPIO_AFRL_AFSEL7_Pos);                                                                      // Set the alternate function to RX
 
+    // Enable the USART clock
+    RCC->APB2ENR |= (RCC_APB2ENR_USART1EN);
+    
     // Select PCLK as the clock for the port USART1 (00)
     RCC->CCIPR &= ~(RCC_CCIPR_USART1SEL);
 
+    // Reset the USART1
     RCC->APB2RSTR |= (RCC_APB2RSTR_USART1RST);
     RCC->APB2RSTR &= ~(RCC_APB2RSTR_USART1RST);             // Turn off the reset
 
     // Set up mode 8N1, 8 databits, no parity bit, 1 stop bit, 115200 bps
-    USART1->BRR = ((FreqSysClk) / 115200);                  // Set 115200 bps
-    // Clean the register CR1 and CR2
-    USART1->CR1 &= ~(USART_CR1_OVER8);                      // Clean register over8
-    USART1->CR1 &= ~(USART_CR1_M);                          // Clean the register M
-    USART1->CR1 &= ~(USART_CR1_PCE);                        // Clean the register PCE
-    USART1->CR2 &= ~(USART_CR2_STOP);                       // Clean the register STOP
+    USART1->BRR = (uint32_t) (FreqSysClk / baudrate);       // Set 115200 bps
     // Setup the 8N1 mode
-    USART1->CR1 &= ~(USART_CR1_OVER8 | USART_CR1_M | USART_CR1_PCE);
-    USART1->CR2 &= ~(USART_CR2_STOP);
+    USART1->CR1 &= ~(USART_CR1_OVER8);                      // Oversampling by 16
+    USART1->CR1 &= ~(USART_CR1_M);                          // 1 Start bit, 8 data bits, n stop bits
+    USART1->CR1 &= ~(USART_CR1_PCE);                        // Parity control disabled
+    USART1->CR2 &= ~(USART_CR2_STOP);                       // 1 stop bit
 
     // Enable the USART, the transmition and reception
     USART1->CR1 |= (USART_CR1_UE | USART_CR1_TE | USART_CR1_RE);
+
+    USART1->CR1 |= USART_CR1_RXNEIE;                        // RXNE interrupt enable, a USART interruption generated when RXNE = 1 or ORE = 1
+
+    // Enable USART1 interruption handler
+    NVIC_EnableIRQ(USART1_IRQn);
+
 }
 // Send a character
 // TDR = Transmitter data register  (Stored the value for send)
@@ -115,6 +124,36 @@ void checksum() {
     // Show the sum
     uart_puts(buffer);
 }
+
+void test_USART(){
+    char buffer[12];
+    uart_putchar('H');
+    while(1){
+        uint8_t c = uart_getchar();     // Receive a character
+        uart_putchar(c);                // Send the character
+        uart_puts("cachon");
+        uart_gets(buffer, 12);
+        uart_puts("You wrote: ");
+        uart_puts(buffer);
+        uart_putchar('\n');             // Add a newline character for improve the format
+        uart_puts("cachon");
+
+    }
+}
+
+void USART1_IRQHandler(void){
+    if (USART1->ISR & USART_ISR_RXNE){                      // Check if exists received data
+        uint8_t byte_received = uart_getchar();             // Read the received data
+
+        if (byte_received == 0xFF){
+            frame_index = 0;
+        }else{
+            frames[frame_index] = byte_received;
+            frame_index++;
+        }
+    }
+}
+
 // JLinkExe -device STM32L475VG -if SWD -autoconnect 1 -speed auto ...
 // make connect
 // tio /dev/ttyACM0 -b 115200 -d 8 --parity none --stopbits 1 -f none
