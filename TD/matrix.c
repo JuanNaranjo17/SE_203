@@ -180,10 +180,14 @@ void test_image(uint8_t *address_start){
 
     while(1){                                                   // Keep showing the image
         for (uint8_t row = 0; row < 8; row++) {                 // Go through the rows
-            for (uint8_t i = 0; i < 8; i++) {                   // Set each LED in a row with the correspondent value
-                LED[i].r = *byte_start++;
-                LED[i].g = *byte_start++;
-                LED[i].b = *byte_start++;
+            while(!update_is_able);                             // Upload each line 60*8 times by each second
+            if (update_is_able) {                               // Upload if the timer set the flag
+                for (uint8_t i = 0; i < 8; i++) {               // Set each LED in a row with the correspondent value
+                    LED[i].r = *byte_start++;
+                    LED[i].g = *byte_start++;
+                    LED[i].b = *byte_start++;
+                }
+                update_is_able = 0;                             // Restart the target
             }
             mat_set_row(row, LED);                              // Put the row value in the DM163
         }

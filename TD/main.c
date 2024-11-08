@@ -24,7 +24,7 @@ int main(){
     matrix_init();
     irq_init();
     button_init();
-    timer_init(1000000);
+    timer_init(1000000/(60*8));
     //test_USART();
     //test_LED();
     //test_pixels();

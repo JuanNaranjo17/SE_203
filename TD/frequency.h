@@ -4,5 +4,6 @@
 #include <stdint.h>
 
 extern const uint32_t FreqSysClk;
+extern volatile uint8_t update_is_able;
 
 #endif

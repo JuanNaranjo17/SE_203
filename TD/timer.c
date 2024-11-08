@@ -35,6 +35,7 @@ void TIM2_IRQHandler(){
 
     if (TIM2->SR & TIM_SR_UIF) {                // Check if Update interrupt flag is 1, 1 if an update interrupt pending. Cleared by software 
         TIM2->SR &= ~TIM_SR_UIF;                // Clean the flag
-        switch_LED_g();                         // Switch the green LED
+        //switch_LED_g();                         // Switch the green LED
+        update_is_able = 1;                     // Update the flag
     }
 }
