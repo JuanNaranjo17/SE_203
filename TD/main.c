@@ -4,6 +4,7 @@
 #include "matrix.h"         // Include the library for handle the LED matrix
 #include "irq.h"            // Include the library for handle the interruptions
 #include "buttons.h"        // Include the library for handle the buttons interruptions
+#include "timer.h"          // Include the library for handle the timer interruptions
 
 int fibo(int n) {
     if (n <= 0) {
@@ -23,7 +24,11 @@ int main(){
     matrix_init();
     irq_init();
     button_init();
+    timer_init(1000000);
     //test_USART();
+    //test_LED();
+    //test_pixels();
+
 
     test_image((uint8_t *)frames);
     test_image(&_binary_image_raw_start);
