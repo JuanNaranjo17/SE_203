@@ -17,7 +17,7 @@ int fibo(int n) {
 }
 
 
-int main(){
+int __attribute__((section(".text"))) main(){
     clocks_init();
     led_init();
     uart_init(38400);

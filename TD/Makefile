@@ -7,6 +7,7 @@ LD     = $(PREFIX)ld
 GDB    = $(PREFIX)gdb
 CC     = $(PREFIX)gcc
 OCP    = $(PREFIX)objcopy
+OBJ	   = $(PREFIX)objdump
 
 # Options for C, assembly, debug and linker commands
 TARGET_ARCH = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -53,6 +54,9 @@ connect:												# Boot the JLinkGDBServer driver with a specific set up for 
 
 debug:													# Boot the debugger loading commands since the se203.gdb file
 	$(GDB) $(GDBFLAGS) $(TARGET)
+
+disassembly:											# Shows the assembly code generated
+	$(OBJ) -d $(TARGET)
 
 clean:													# Clean the .elf files generated, this is useful for keep the directory clean before a new execution
 	rm -f $(OBJFILES) $(TARGET)
