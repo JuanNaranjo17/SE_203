@@ -24,7 +24,7 @@ ASFILES  = $(wildcard *.s)								# Get all .s files in the directory into an ar
 OBJFILES = $(patsubst %.c,%.o,$(CFILES))				# Create corresponding .o files since .c files (search the files that finish in .c and replace .c by .o)
 OBJFILES += $(patsubst %.s,%.o,$(ASFILES))				# Create corresponding .o files since .s files (search the files that finish in .s and replace .s by .o)
 OBJFILES += image.o
-OBJFILES += clocks.o
+#OBJFILES += clocks.o
 
 TARGET   = main											# Name of the final executable
 

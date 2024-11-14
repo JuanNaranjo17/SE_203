@@ -7,29 +7,31 @@ MEMORY
 
 _stack_start = ORIGIN(SRAM2) + LENGTH(SRAM2);               /* Define the stack started point */
 
+_data_src = LOADADDR(.data);                                /* Define the data section location in flash */
+
 SECTIONS{
 
     /* Vector table section (should be in FLASH) */
     .isr_vector :
     {
         KEEP(*(.isr_vector))   /* Keep the vector table section */
-    } > SRAM1
+    } > FLASH
 
-    /* Text section for the executed code saved in SRAM1 */
+    /* Text section for the executed code saved in FLASH memory */
     .text :
     {
         _text_start = .;
         *(.text)               /* All the text section  (The * is for recognize all the sections that match with .text ) */
         _text_end = .;
-    } > SRAM1
+    } > FLASH
 
-    /* Read only data section for the constants saved in SRAM1 */
+    /* Read only data section for the constants saved in FLASH memory */
     .rodata :
     {
         _rodata_start = .;
         *(.rodata)             /* All the read only data */
         _rodata_end = .;
-    } > SRAM1
+    } > FLASH
 
     /* Data section for the initialized variables */
     .data : 
@@ -37,7 +39,7 @@ SECTIONS{
         _data_start = .;
         *(.data)               /* All the data section */
         _data_end = .;
-    } > SRAM1
+    } > FLASH AT > SRAM1       /* Copy this section from FLASH to SRAM1 at startup */
 
     /* bss section for the non initialized variables */
     .bss : 
