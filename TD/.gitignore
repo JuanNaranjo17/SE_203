@@ -1,0 +1,15 @@
+# Ignore all the object files .o
+*.o
+
+# Ignore personal configuration folders
+.vscode/       # Visual Studio Code configuration
+
+# Ignore back up systems files and system configuration files
+*.swp          # Swap file of Vim
+*.tmp          # Temporal files
+*.log          # Register files
+.DS_Store      # macOS metadata
+Thumbs.db      # Windows metadata
+
+# Ignore personal configurations in the environment
+*.env          # Archivos de variables de entorno
